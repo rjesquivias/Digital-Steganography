@@ -1,3 +1,1 @@
-dataInBits = convertIntToBinary(sizeOfData) 
--> This function needs to convert all types of data to binary
 
