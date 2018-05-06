@@ -1,7 +1,12 @@
 from __future__ import print_function
 from PIL import Image
-import os, sys, math
-
+import os, sys, math, argparse
+parser = argparse.ArgumentParser()
+parser.add_argument("mode", help="encode/decode: If encoding data, pass in --text, --input, --output. If decoding data, pass in --input.")
+parser.add_argument("-t", "--text", default="Fill me with data to hide by using the -t or --text argument via the command line!", help="The text that will be stored within the image")
+parser.add_argument("-o", "--output", default="output.png", help="Specified output file (something.png)")
+parser.add_argument("-i", "--input", default="input.jpg", help="Specified input file (something.jpg)")
+args = parser.parse_args()
 
 def intToBinary(value):
     return '{0:b}'.format(value)
@@ -238,22 +243,34 @@ def readBinaryInImage(im):
     text = binaryToText(text)
     return text
 
+#print(args)
+# Here is the main
+if(args.mode == "encode"):
+    # open image for processing
+    im = Image.open(args.input)
 
-# open image for processing
-im = Image.open("hacker.jpg")
+    # converts the string to be hidden into binary
+    binaryString = textToBinary(args.text)
+    #print("Binary representation of " + var + ": " + binaryString)
 
-# converts the string to be hidden into binary
-var = "1234 8293"
-binaryString = textToBinary(var) # GOOD UP TO HERE
-#print("Binary representation of " + var + ": " + binaryString)
+    # hides the string and length
+    storeBinaryInImage(binaryString, im)
 
-# hides the string and length
-storeBinaryInImage(binaryString, im)
+    # save as png and close the image
+    im.save(args.output)
+    print("Text succesfully stored in " + str(args.output))
+    im.close()
 
-# read the data back from the image
-text = readBinaryInImage(im)
-print("Read Data From Picture: " + text)
+elif(args.mode == "decode"):
+    # open image for processing
+    im = Image.open(args.input)
 
-# save as png and close the image
-im.save("output.png")
-im.close()
+    # read the data back from the image
+    text = readBinaryInImage(im)
+    print("Read Data From Picture: " + text)
+
+    im.close()
+else:
+    print("ERROR: incorrect mode argument passed through command line.")
+    print("Correct mode encode usage: python3 encode -t 'hello world' -i 'input.jpg' -o 'output.png'")
+    print("Correct mode decode usage: python3 decode -i 'input.jpg'")
