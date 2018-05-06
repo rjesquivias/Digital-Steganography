@@ -7,7 +7,7 @@ def intToBinary(value):
     return '{0:b}'.format(value)
 
 def textToBinary(value):
-    return (' '.join(format(x, 'b') for x in bytearray(value)))
+    return (' '.join(format(x, 'b') for x in bytearray(value, 'utf8')))
 
 def calculateInt(bitsFilled, bitList):
     difference = 8 - bitsFilled
@@ -54,6 +54,7 @@ def binaryToInt(value):
 
 def pixelLoop(im, pixelsNeeded, binaryData, isStartingSize, width, height):
     numEdits = 0
+    #print("Binary Data: " + str(binaryData))
     length = len(binaryData)
     px = im.load()
 
@@ -68,8 +69,9 @@ def pixelLoop(im, pixelsNeeded, binaryData, isStartingSize, width, height):
         for y in range(2, -1, -1):
             #if y is 0, convert binaryData[0] & binaryData[1] into an int(color)
 
-            if(i < pixelsNeeded):
-                if(y > edits or numEdits >= len(binaryData)):
+            if(i <= pixelsNeeded):
+                if(numEdits > len(binaryData)):
+                    #print("In edge case!!!!!!!!!!!!!!!!! numedits: " + str(numEdits))
                     col = "0"
                 else:
                     col = binaryData[len(binaryData) - 1 - numEdits]
@@ -77,9 +79,10 @@ def pixelLoop(im, pixelsNeeded, binaryData, isStartingSize, width, height):
                 col = "0"
 
             old = list(intToBinary(RGB[y]))
-            print("before: " + str(old))
+            #print("before: " + str(old))
             old[len(old) - 1] = col
-            print("after: " + str(old))
+            #print("after: " + str(old))
+            #print()
             col = ''.join(old)
             col = binaryToInt(col)
             colors[y] = col
@@ -156,14 +159,16 @@ def storeBinaryInImage(binaryData, im):
     height = im.height - 1
 
     binaryData = convertToProperFormat(binaryData)
+    #print("Binary data in converted format: " + binaryData)
     length = len(binaryData)
-    print("length of bits: " + str(length))
+    #print("Length of bits: " + str(length))
 
     binaryLength = intToBinary(length)
     binaryLength = convertToProperFormat(binaryLength)
-    print("binary length: " + str(binaryLength))
+    #print("Length of bits in binary format: " + str(binaryLength)) # GOOD UP TO HERE
 
     lengthOfBinaryLength = len(binaryLength)
+    #print("Length of length of binary bits: " + str(lengthOfBinaryLength))
 
     #Figure out how many pixels we need to loop over
     pixelsNeeded = int(math.ceil((float(lengthOfBinaryLength)/3)))
@@ -172,6 +177,7 @@ def storeBinaryInImage(binaryData, im):
         print("The data is too large, try again with a smaller payload.")
         return
 
+    #print("Inserting binary length into picture...")
     height = pixelLoop(im, pixelsNeeded, binaryLength, True, width, height)
     width -= 11;
 
@@ -182,6 +188,7 @@ def storeBinaryInImage(binaryData, im):
 
     #Figure out how many pixels we need to loop over
     pixelsNeeded = int(math.ceil((float(length)/3)))
+    #print("Inserting data into picture...")
     pixelLoop(im, pixelsNeeded, binaryData, False, width, height)
 
 def readBinaryInImage(im):
@@ -204,18 +211,22 @@ def readBinaryInImage(im):
             height -= 1
 
     length = ''.join(sizeBitArray)
-    print("read bits: " + str(length))
+    #print("Binary of length: " + str(length))
     length = binaryToInt(length)
-    print("read length: " + str(length))
+    #print("read length: " + str(length))
     pixelLength = int(math.ceil((float(length)/3)))
+    #print("Need to read " + str(pixelLength) + " pixels.")
 
     dataBitArray = []
+    readCounter = 0
     for i in range(pixelLength):
         RGB = px[width, height]
 
         for i in range(2, -1, -1):
-            col = intToBinary(RGB[i])
-            dataBitArray.insert(0,col[len(col) - 1])
+            if(readCounter < length):
+                col = intToBinary(RGB[i])
+                dataBitArray.insert(0,col[len(col) - 1])
+                readCounter += 1
 
         width -= 1
         if(width < 0):
@@ -223,6 +234,7 @@ def readBinaryInImage(im):
             height -= 1
 
     text = ''.join(dataBitArray)
+    #print("Stored Data: " + str(text))
     text = binaryToText(text)
     return text
 
@@ -231,7 +243,9 @@ def readBinaryInImage(im):
 im = Image.open("hacker.jpg")
 
 # converts the string to be hidden into binary
-binaryString = textToBinary("As advanced practiced Nurses research is and will be a key factor in how we practice our nursing.")
+var = "1234 8293"
+binaryString = textToBinary(var) # GOOD UP TO HERE
+#print("Binary representation of " + var + ": " + binaryString)
 
 # hides the string and length
 storeBinaryInImage(binaryString, im)
