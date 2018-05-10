@@ -1,6 +1,8 @@
 from __future__ import print_function
 from PIL import Image
 import os, sys, math, argparse
+
+""" Argument Parsing """
 parser = argparse.ArgumentParser()
 parser.add_argument("mode", help="encode/decode: If encoding data, pass in --text, --input, --output. If decoding data, pass in --input.")
 parser.add_argument("-o", "--output", default="output.png", help="Specified output file (something.png)")
@@ -8,12 +10,19 @@ parser.add_argument("-i", "--input", default="input.jpg", help="Specified input 
 args = parser.parse_args()
 
 def intToBinary(value):
+    """Converts int values to binary."""
     return '{0:b}'.format(value)
 
+def binaryToInt(value):
+    """Converts binary values to int."""
+    return int(value, 2)
+
 def textToBinary(value):
+    """Converts a string of text into Binary."""
     return (' '.join(format(x, 'b') for x in bytearray(value, 'utf8')))
 
 def calculateInt(bitsFilled, bitList):
+    """Takes a binary value, and converts into an integer."""
     difference = 8 - bitsFilled
     startIndex = bitsFilled - 1
     value = 0
@@ -27,6 +36,7 @@ def calculateInt(bitsFilled, bitList):
     return value
 
 def binaryToText(bin):
+    """Takes a binary value, and converts into a string."""
     #store every section of bytes separated by ' ' in bitList
     bitsFilled = 0
     bitList = [0,0,0,0,0,0,0,0]
@@ -53,12 +63,9 @@ def binaryToText(bin):
     intList.append(calculateInt(bitsFilled, bitList))
     return (''.join(chr(x) for x in intList))
 
-def binaryToInt(value):
-    return int(value, 2)
-
 def pixelLoop(im, pixelsNeeded, binaryData, isStartingSize, width, height):
+    """Changes the pixel value's least significant bits"""
     numEdits = 0
-    #print("Binary Data: " + str(binaryData))
     px = im.load()
 
     for i in range(pixelsNeeded):
@@ -92,6 +99,7 @@ def pixelLoop(im, pixelsNeeded, binaryData, isStartingSize, width, height):
     return height
 
 def convertToProperFormat(binaryData):
+    """Takes binary and converts it into non space 8 bit segments"""
     count = 0
     sol = []
 
@@ -128,25 +136,17 @@ def convertToProperFormat(binaryData):
     return sol
 
 def storeBinaryInImage(binaryData, im):
+    """Main driver function that takes a block of binary
+     and stores it inside of the image"""
 
     width = im.width - 1
     height = im.height - 1
 
     binaryData = convertToProperFormat(binaryData)
-    #print("Binary data in converted format: " + binaryData)
     length = len(binaryData)
-    #print("Length of bits: " + str(length))
-
     binaryLength = intToBinary(length)
     binaryLength = convertToProperFormat(binaryLength)
-    #altLength = intToBinary(length * 8)
-    #altLength = convertToProperFormat(altLength)
-    #print("Length of bits in binary format: " + str(binaryLength)) # GOOD UP TO HERE
-    #print("Alt Length of bits in binary format: " + str(altLength)) # GOOD UP TO HERE
-
-
     lengthOfBinaryLength = len(binaryLength)
-    #print("Length of length of binary bits: " + str(lengthOfBinaryLength))
 
     if(lengthOfBinaryLength > 32):
         print("The data is too large, try again with a smaller payload.")
@@ -170,6 +170,8 @@ def storeBinaryInImage(binaryData, im):
     pixelLoop(im, pixelsNeeded, binaryData, False, width, height)
 
 def readBinaryInImage(im):
+    """Driver program that will print out the hidden
+    text from within the passed image"""
     width = im.width - 1
     height = im.height - 1
     px = im.load()
@@ -180,14 +182,10 @@ def readBinaryInImage(im):
     #on the 11th pixel we don't read the B of the rgbs
     for i in range(11):
         RGB = px[width, height]
-        #print(RGB)
 
-        #for i in range(2, -1, -1):
         for i in range(3):
             if(counter < 32):
                 col = intToBinary(RGB[i])
-                #print(col)
-                #sizeBitArray.insert(0,col[len(col) - 1])
                 sizeBitArray.append(col[len(col) - 1])
                 counter += 1
 
@@ -197,11 +195,8 @@ def readBinaryInImage(im):
             height -= 1
 
     length = ''.join(sizeBitArray)
-    #print("Binary of length: " + str(length))
     length = (binaryToInt(length))
-    #print("read length: " + str(length))
     pixelLength = int(math.ceil((float(length)/3)))
-    #print("Need to read " + str(pixelLength) + " pixels.")
 
     if(pixelLength > (im.width * im.height)):
         print("ERROR: Stored length size is bigger than the size of the picture!")
@@ -212,11 +207,9 @@ def readBinaryInImage(im):
     for i in range(pixelLength):
         RGB = px[width, height]
 
-        #for i in range(2, -1, -1):
         for i in range(3):
             if(readCounter < length):
                 col = intToBinary(RGB[i])
-                #dataBitArray.insert(0,col[len(col) - 1])
                 dataBitArray.append(col[len(col) - 1])
                 readCounter += 1
 
@@ -226,17 +219,13 @@ def readBinaryInImage(im):
             height -= 1
 
     text = ''.join(dataBitArray)
-    #print("Binary text: " + str(text))
     text = binaryToText(text)
     return text
 
-#print(args)
 # Here is the main
 if(args.mode == "encode"):
     # open image for processing
     im = Image.open(args.input)
-    #print(os.getcwd())
-    #text = os.getcwd()
     f = open('encode.txt', 'r')
     text = f.read()
 
